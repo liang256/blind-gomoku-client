@@ -5,6 +5,14 @@ const socket = io.connect('http://localhost:9000'); // Connect to your server
 
 function App() {
   const [message, setMessage] = useState('');
+  const [receivedMessages, setReceivedMessages] = useState('');
+
+  useEffect(() => {
+    // Listen for messages from the server
+    socket.on('message', (data) => {
+      setReceivedMessages(data);
+    });
+  }, []);
 
   const sendMessage = () => {
     // Send a message to the server
@@ -22,6 +30,12 @@ function App() {
           onChange={(e) => setMessage(e.target.value)}
         />
         <button onClick={sendMessage}>Send</button>
+      </div>
+      <div>
+        <h2>Received Messages</h2>
+        <ul>
+          {receivedMessages}
+        </ul>
       </div>
     </div>
   );
