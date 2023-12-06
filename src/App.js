@@ -3,14 +3,36 @@ import io from 'socket.io-client';
 
 const socket = io.connect('http://localhost:9000'); // Connect to your server
 
-const BoardRenderer = ({ board }) => {
+const BoardRenderer = ({ room, pickedColor }) => {
+  const [board, setBoard] = useState([
+    ["#000000", "#000000", "#000000"],
+    ["#000000", "#FFFFFF", "#000000"],
+    ["#000000", "#000000", "#000000"],
+  ]);
+
+  useEffect(() => {
+    socket.on("render_board", (board) => {
+      setBoard(board);
+    });
+  }, [socket]);
+
+  const putPiece = (x, y) => {
+    console.log(`${socket.id} hit ${x}, ${y} to room ${room}`);
+    socket.emit("put_piece", {
+      x: x,
+      y: y,
+      color: pickedColor,
+      player: socket.id,
+      room: room
+    });
+  };
+
   if (!board) {
     board = [[]];
   }
 
   return (
     <div>
-      <h2>Game</h2>
       {board.map((row, rowIndex) => (
         <div key={rowIndex} style={{ display: 'flex' }}>
           {row.map((color, cellIndex) => (
@@ -23,6 +45,7 @@ const BoardRenderer = ({ board }) => {
                 border: '1px solid #000000',
                 margin: '2px',
               }}
+              onClick={() => putPiece(rowIndex, cellIndex)}
             ></div>
           ))}
         </div>
@@ -31,16 +54,34 @@ const BoardRenderer = ({ board }) => {
   );
 };
 
+const ColorPicker = ({ pickedColor, setPickedColor }) => {
+  const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+
+  return (
+    <div style={{ display: 'flex' }}>
+      {colors.map((color, index) => (
+        <div 
+          key={index}               
+          style={{
+            width: '30px',
+            height: '30px',
+            backgroundColor: color,
+            border: `${(pickedColor === color)? 3 : 0}px solid #000000`,
+            margin: '2px',
+          }}
+          onClick={() => {setPickedColor(color)}}
+        />
+      ))}
+    </div>
+  );
+};
+
 function App() {
-  const [room, setRoom] = useState('');
+  const [room, setRoom] = useState('room1');
   const [position, setPosition] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [gameMsg, setGameMsg] = useState('');
-  const [board, setBoard] = useState([
-    ["#000000", "#000000", "#000000"],
-    ["#000000", "#FFFFFF", "#000000"],
-    ["#000000", "#000000", "#000000"],
-  ]);
+  const [pickedColor, setPickedColor] = useState('#FF0000');
 
   useEffect(() => {
     socket.on("error_message", (msg) => {
@@ -49,10 +90,6 @@ function App() {
 
     socket.on("message", (msg) => {
       setGameMsg(msg);
-    });
-
-    socket.on("render_board", (board) => {
-      setBoard(board);
     });
   }, [socket]);
 
@@ -63,41 +100,20 @@ function App() {
     socket.emit('join_room', room);
   };
 
-  const putPiece = () => {
-    position.split(',');
-    const [xStr, yStr] = position.split(",");
-
-    // Convert x and y to integers
-    const x = parseInt(xStr, 10);
-    const y = parseInt(yStr, 10);
-
-    // Check if the conversion was successful
-    if (isNaN(x) || isNaN(y)) {
-      alert("Invalid input for x or y");
-    }
-
-    socket.emit("put_piece", {
-      x: x,
-      y: y,
-      player: socket.id,
-      room: room
-    });
-  }
-
   return (
     <div>
       <h1>Socket.io React App</h1>
       <div>
         <h3>Player ID</h3>
-        <h>{socket.id}</h>
+        <span>{socket.id}</span>
       </div>
       <div>
         <h3>Error</h3>
-        <h>{errorMsg}</h>
+        <span>{errorMsg}</span>
       </div>
       <div>
         <h3>Msg</h3>
-        <h>{gameMsg}</h>
+        <span>{gameMsg}</span>
       </div>
       <div>
         <h2>Room</h2>
@@ -109,16 +125,12 @@ function App() {
         <button onClick={joinRoom}>Join</button>
       </div>
       <div>
-        <h2>Put Piece</h2>
-        <input
-          type="text"
-          value={position}
-          onChange={(e) => setPosition(e.target.value)}
-        />
-        <button onClick={putPiece}>Put</button>
+        <h2>Game</h2>
+        <BoardRenderer room={room} pickedColor={pickedColor}/>
       </div>
       <div>
-        <BoardRenderer board={board}/>
+        <h2>Color Picker</h2>
+        <ColorPicker pickedColor={pickedColor} setPickedColor={setPickedColor}/>
       </div>
     </div>
   );
