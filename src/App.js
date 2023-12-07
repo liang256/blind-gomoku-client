@@ -78,18 +78,21 @@ const ColorPicker = ({ pickedColor, setPickedColor }) => {
 
 function App() {
   const [room, setRoom] = useState('room1');
-  const [position, setPosition] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [gameMsg, setGameMsg] = useState('');
   const [pickedColor, setPickedColor] = useState('#FF0000');
 
   useEffect(() => {
+    const replaceSocketId = (msg) => {return msg.replace(socket.id, 'you')};
+
     socket.on("error_message", (msg) => {
-      setErrorMsg(msg);
+      setErrorMsg(replaceSocketId(msg));
+      setGameMsg('');
     });
 
     socket.on("message", (msg) => {
-      setGameMsg(msg);
+      setGameMsg(replaceSocketId(msg));
+      setErrorMsg('');
     });
   }, [socket]);
 
@@ -100,33 +103,53 @@ function App() {
     socket.emit('join_room', room);
   };
 
+  const resetGame = (room) => {
+    if (!room) {
+      alert("Invalid room name.");
+    }
+    socket.emit('reset_game', {room: room, player: socket.id});
+  };
+
   return (
     <div>
-      <h1>Socket.io React App</h1>
-      <div>
-        <h3>Player ID</h3>
-        <span>{socket.id}</span>
-      </div>
-      <div>
-        <h3>Error</h3>
-        <span>{errorMsg}</span>
-      </div>
-      <div>
-        <h3>Msg</h3>
-        <span>{gameMsg}</span>
-      </div>
-      <div>
-        <h2>Room</h2>
+      <h1>Blind Gokume</h1>
+      <div style={{display: 'flex'}}>
+        <span>Room</span>
         <input
           type="text"
           value={room}
           onChange={(e) => setRoom(e.target.value)}
         />
         <button onClick={joinRoom}>Join</button>
+        <span>Player ID: {socket.id}</span>
       </div>
+
+      <div id='message-container' style={{display: 'flex'}}>
+      {errorMsg &&
+        <div style={{
+          flex: '1', /* Each column takes up equal space */
+          padding: '5px'
+        }}>
+          <h3>Error</h3>
+          <span>{errorMsg}</span>
+        </div>
+      }
+
+      {gameMsg &&
+        <div style={{
+          flex: '1', /* Each column takes up equal space */
+          padding: '5px'
+        }}>
+          <h3>Msg</h3>
+          <span>{gameMsg}</span>
+        </div>
+      }
+      </div>
+
       <div>
         <h2>Game</h2>
         <BoardRenderer room={room} pickedColor={pickedColor}/>
+        <button onClick={() => resetGame(room)}>Reset</button>
       </div>
       <div>
         <h2>Color Picker</h2>
