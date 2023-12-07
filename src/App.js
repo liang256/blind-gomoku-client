@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import config from './config';
 
-const game_server = process.env.GAME_SERVER || 'http://localhost:9000';
+const game_server = config.gameServerUrl || 'http://localhost:9000';
 const socket = io.connect(game_server); // Connect to your server
 
 const BoardRenderer = ({ room, pickedColor }) => {
@@ -34,6 +35,7 @@ const BoardRenderer = ({ room, pickedColor }) => {
 
   return (
     <div>
+      {game_server}
       {board.map((row, rowIndex) => (
         <div key={rowIndex} style={{ display: 'flex' }}>
           {row.map((color, cellIndex) => (
