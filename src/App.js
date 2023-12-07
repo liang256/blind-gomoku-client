@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
-const socket = io.connect('http://localhost:9000'); // Connect to your server
+const game_server = process.env.GAME_SERVER || 'http://localhost:9000';
+const socket = io.connect(game_server); // Connect to your server
 
 const BoardRenderer = ({ room, pickedColor }) => {
   const [board, setBoard] = useState([
